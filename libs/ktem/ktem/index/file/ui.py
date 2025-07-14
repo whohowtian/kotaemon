@@ -85,10 +85,11 @@ class File(gr.File):
         file_name = f.path
         if self.type == "filepath":
             if f.orig_name and Path(file_name).name != f.orig_name:
-                file_name = str(Path(file_name).parent / f.orig_name)
-                os.rename(f.path, file_name)
-            file = tempfile.NamedTemporaryFile(delete=False, dir=self.GRADIO_CACHE)
-            file.name = file_name
+                dest_path = Path(file_name).parent / f.orig_name
+                if dest_path.exists():
+                    os.remove(dest_path)  # Overwrite by deleting existing file
+                os.rename(f.path, dest_path)
+                file_name = str(dest_path)
             return NamedString(file_name)
         elif self.type == "binary":
             with open(file_name, "rb") as file_data:

@@ -16,7 +16,7 @@ class ChromaVectorStore(LlamaIndexVectorStore):
         port: str = "8000",
         ssl: bool = False,
         headers: Optional[Dict[str, str]] = None,
-        collection_kwargs: Optional[dict] = None,
+        collection_kwargs: Optional[dict] = {"metadata": {"hnsw:space": "cosine"}},
         stores_text: bool = True,
         flat_metadata: bool = True,
         **kwargs: Any,
@@ -41,7 +41,10 @@ class ChromaVectorStore(LlamaIndexVectorStore):
             )
 
         client = chromadb.PersistentClient(path=path)
-        collection = client.get_or_create_collection(collection_name)
+        collection = client.get_or_create_collection(
+            name=collection_name,
+            **collection_kwargs
+        )
 
         # pass through for nice IDE support
         super().__init__(

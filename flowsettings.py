@@ -354,7 +354,7 @@ SETTINGS_REASONING = {
 }
 
 USE_GLOBAL_GRAPHRAG = config("USE_GLOBAL_GRAPHRAG", default=True, cast=bool)
-USE_NANO_GRAPHRAG = config("USE_NANO_GRAPHRAG", default=False, cast=bool)
+USE_NANO_GRAPHRAG = config("USE_NANO_GRAPHRAG", default=True, cast=bool)
 USE_LIGHTRAG = config("USE_LIGHTRAG", default=True, cast=bool)
 USE_MS_GRAPHRAG = config("USE_MS_GRAPHRAG", default=True, cast=bool)
 
@@ -402,3 +402,6 @@ KH_INDICES = [
     },
     *GRAPHRAG_INDICES,
 ]
+
+# FILE_INDEX_PIPELINE = "ktem.index.file.bloomberg_pipelines.IndexBloombergPipeline"
+# FILE_INDEX_PIPELINE = "ktem.index.file.seeking_alpha_pipelines.IndexSeekingAlphaPipeline"

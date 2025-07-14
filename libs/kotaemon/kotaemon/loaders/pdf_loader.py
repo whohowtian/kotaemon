@@ -1,11 +1,12 @@
 import base64
+import os
 from io import BytesIO
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 from decouple import config
 from fsspec import AbstractFileSystem
-from llama_index.readers.file import PDFReader
+from llama_index.readers.file.pymu_pdf import PyMuPDFReader
 from PIL import Image
 
 from kotaemon.base import Document
@@ -56,23 +57,75 @@ def convert_image_to_base64(img: Image.Image) -> str:
     return img_base64
 
 
-class PDFThumbnailReader(PDFReader):
-    """PDF parser with thumbnail for each page."""
-
-    def __init__(self) -> None:
-        """
-        Initialize PDFReader.
-        """
-        super().__init__(return_full_document=False)
+class PDFThumbnailReader(PyMuPDFReader):
+    """Read PDF files using PyMuPDF library."""
 
     def load_data(
         self,
-        file: Path,
+        file: Union[Path, str],
+        metadata: bool = True,
         extra_info: Optional[Dict] = None,
-        fs: Optional[AbstractFileSystem] = None,
     ) -> List[Document]:
-        """Parse file."""
-        documents = super().load_data(file, extra_info, fs)
+        """Loads list of documents from PDF file and also accepts extra information in dict format."""
+        return self.load(file, metadata=metadata, extra_info=extra_info)
+
+    def load(
+        self,
+        file: Union[Path, str],
+        metadata: bool = True,
+        extra_info: Optional[Dict] = None,
+    ) -> List[Document]:
+        """
+        Loads list of documents from PDF file and also accepts extra information in dict format.
+
+        Args:
+            file_path (Union[Path, str]): file path of PDF file (accepts string or Path).
+            metadata (bool, optional): if metadata to be included or not. Defaults to True.
+            extra_info (Optional[Dict], optional): extra information related to each document in dict format. Defaults to None.
+
+        Raises:
+            TypeError: if extra_info is not a dictionary.
+            TypeError: if file_path is not a string or Path.
+
+        Returns:
+            List[Document]: list of documents.
+
+        """
+        import fitz
+
+        # check if file_path is a string or Path
+        if not isinstance(file, str) and not isinstance(file, Path):
+            raise TypeError("file_path must be a string or Path.")
+
+        # open PDF file
+        doc = fitz.open(file)
+
+        # if extra_info is not None, check if it is a dictionary
+        if extra_info:
+            if not isinstance(extra_info, dict):
+                raise TypeError("extra_info must be a dictionary.")
+            
+        documents = []
+        # if metadata is True, add metadata to each document
+        if metadata:
+            if not extra_info:
+                extra_info = {}
+            extra_info["file_name"] = os.path.basename(file)
+
+            # Add documents to the list
+            for page in doc:
+                documents.append(
+                    Document(
+                        # sort=True aligns text formatting correctly
+                        text=page.get_text(sort=True).encode("utf-8"),  
+                        extra_info=dict(
+                            extra_info,
+                            **{
+                                "page_label": f"{page.number + 1}",
+                            },
+                        ),
+                    )
+                )
 
         page_numbers_str = []
         filtered_docs = []

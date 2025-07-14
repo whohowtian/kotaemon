@@ -120,7 +120,7 @@ class VectorRetrieval(BaseRetrieval):
     doc_store: Optional[BaseDocumentStore] = None
     embedding: BaseEmbeddings
     rerankers: Sequence[BaseReranking] = []
-    top_k: int = 5
+    top_k: int = 20
     first_round_top_k_mult: int = 10
     retrieval_mode: str = "hybrid"  # vector, text, hybrid
 
@@ -244,7 +244,17 @@ class VectorRetrieval(BaseRetrieval):
                     result = self._filter_docs(result, top_k=top_k)
                 result = reranker.run(documents=result, query=text)
 
+        print("Score of docs")
+        for doc in result:
+            metadata = doc.metadata
+            print(metadata['file_name'])
+            print(doc.score)
         result = self._filter_docs(result, top_k=top_k)
+        print("Score of filtered docs")
+        for doc in result:
+            metadata = doc.metadata
+            print(metadata['file_name'])
+            print(doc.score)
         print(f"Got raw {len(result)} retrieved documents")
 
         # add page thumbnails to the result if exists
@@ -257,6 +267,7 @@ class VectorRetrieval(BaseRetrieval):
         raw_thumbnail_docs = []
         for doc in result:
             if doc.metadata.get("type") == "thumbnail":
+                # print(f"raw thumbnail: {doc.metadata}")
                 # change type to image to display on UI
                 doc.metadata["type"] = "image"
                 raw_thumbnail_docs.append(doc)
@@ -265,6 +276,7 @@ class VectorRetrieval(BaseRetrieval):
                 "thumbnail_doc_id" in doc.metadata
                 and len(thumbnail_doc_ids) < thumbnail_count
             ):
+                # print(f"thumbnail: {doc.metadata}")
                 thumbnail_id = doc.metadata["thumbnail_doc_id"]
                 thumbnail_doc_ids.add(thumbnail_id)
                 text_thumbnail_docs[thumbnail_id] = doc
@@ -295,6 +307,8 @@ class VectorRetrieval(BaseRetrieval):
             additional_docs.append(RetrievedDocument(**doc_dict, score=text_doc.score))
 
         result = additional_docs + non_thumbnail_docs
+        # print(f"Additional docs: {additional_docs}")
+        # print(f"Non thumbnail docs: {non_thumbnail_docs}")
 
         if not result:
             # return output from raw retrieved thumbnails
